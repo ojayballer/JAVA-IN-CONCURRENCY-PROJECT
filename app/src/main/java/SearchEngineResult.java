@@ -1,4 +1,5 @@
-class SearchEngineResult{
+
+class SearchEngineResult {
     private String title;
     private String url;
     private String description;
@@ -20,5 +21,5 @@ class SearchEngineResult{
     public String getDescription() {
         return description;
     }
-    
+
 }
