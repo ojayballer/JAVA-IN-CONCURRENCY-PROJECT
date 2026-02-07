@@ -1,3 +1,4 @@
+package question_1.web_scraper;
 
 class SearchEngineResult {
     private String title;

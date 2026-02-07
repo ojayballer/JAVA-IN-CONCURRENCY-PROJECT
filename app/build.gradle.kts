@@ -25,6 +25,8 @@ dependencies {
     implementation(libs.guava)
 
     implementation("org.jsoup:jsoup:1.18.1")
+
+    implementation("org.knowm.xchart:xchart:3.8.8")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -42,4 +44,8 @@ application {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+tasks.withType<JavaExec> {
+    standardInput = System.`in`
 }

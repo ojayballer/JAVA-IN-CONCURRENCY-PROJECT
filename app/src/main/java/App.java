@@ -1,22 +1,34 @@
+import java.util.Scanner;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import question_1.WebScraper;
 
 public class App {
     public static void main(String[] args) {
+        System.out.println("JAVA IN CONCURRENCY ASSIGNMENT");
+        System.out.println("Select a question to run (1-5):");
+        requestAndRunQuestion();
 
-        String[] crimeLinks = { "https://example-crime-system.com" };
+    }
 
-        // Create a thread pool of 5 threads
-        ExecutorService executor = Executors.newFixedThreadPool(crimeLinks.length);
+    public static void requestAndRunQuestion() {
+        Scanner scanner = new Scanner(System.in);
+        final int input = scanner.nextInt();
+        scanner.close();
 
-        for (String url : crimeLinks) {
-            executor.execute(new WebScraper());
+        switch (input) {
+            case 1:
+                runQuestion1();
+                break;
+
+            default:
+                System.out.println("Question not found. Select from question 1-5");
         }
+    }
 
-        executor.shutdown();
-        while (!executor.isTerminated()) {
-            /* Wait for threads to finish */ }
-
+    /// Assignment 1
+    public static void runQuestion1() {
+        WebScraper scraper = new WebScraper();
+        scraper.analyzeCrimeReportingPapers();
+        scraper.analyzeDeepLearningPapers();
     }
 }
