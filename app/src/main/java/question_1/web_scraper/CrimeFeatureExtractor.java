@@ -1,33 +1,13 @@
 package question_1.web_scraper;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
+import org.jsoup.nodes.*;
 import org.jsoup.select.Elements;
 
-import question_1.WebScraper;
+import question_1.SearchEngineAnalyzer;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/// DEFINITIONS AND DECLARATIONS UNDER THE CLASS
-/// - The `CrimeFeatureExtractor` class implements `Runnable`, allowing it to be executed by a thread.
-/// - It has a constructor that takes a URL and a shared `ConcurrentHashMap` to store results.
-/// - The `CRIME_FEATURES` array contains the 11 distinctive features of crime-reporting systems that we want to check for in the web pages.
-/// - The `run` method is the entry point for the thread, where it connects to the URL, extracts relevant text, 
-//      and checks for the presence of each feature, updating the shared map accordingly.
-
-/// ALGORITHM ON HOW THE BELOW CLASS WORKS
-/// 1. The `run` method starts by adding a random delay to reduce the chances of being rate-limited by the server.
-/// 2. It then uses Jsoup to connect to the given URL, setting a user agent and timeout, and follows redirects if necessary.
-/// 3. The `extractRelevantText` method is called to gather text from various sections
-///   of the page, such as abstracts, articles, paragraphs, tables, and lists.
-/// 4. The extracted text is converted to lowercase for case-insensitive searching.
-/// 5. The method iterates over the `CRIME_FEATURES` array, checking
-///   if each feature is present in the extracted text using the `containsFeature` method, which checks for multiple variants of the feature name.
-/// 6. If a feature is found, the shared `ConcurrentHashMap` is updated in a thread-safe manner to count the occurrences of each feature across all processed pages.
-/// 7. The method handles exceptions gracefully, printing error messages if any issues arise during the connection or processing of the page.
-/// 8. Finally, it prints a success message for each processed URL.
-
+// CRIME FEATURE EXTRACTOR CLASS
 public class CrimeFeatureExtractor implements Runnable {
     private String url;
     private ConcurrentHashMap<String, Integer> sharedResults;
@@ -38,7 +18,7 @@ public class CrimeFeatureExtractor implements Runnable {
             "real-time alerts",
             "geolocation tracking",
             "incident mapping",
-            "mobile app",
+            "mobile-app",
             "digital evidence",
             "encryption",
             "authentication",
@@ -58,27 +38,33 @@ public class CrimeFeatureExtractor implements Runnable {
             // Add artificial delay to reduce rate-limiting issues
             Thread.sleep((long) (Math.random() * 2000 + 1000));
 
-            // Extract text from relevant sections
-            String fullText = extractUsefulTexts(WebScraper.customDoc(url)).toLowerCase();
+            final Document doc = SearchEngineAnalyzer.extractDocument(url);
+            saveResults(doc); // Save results after scraping
 
-            // Check for each feature and update shared map
-            for (String feature : CRIME_FEATURES) {
-                if (containsFeature(fullText, feature)) {
-                    // ConcurrentHashMap handles synchronization internally
-                    Integer oldValue = sharedResults.putIfAbsent(feature, 1);
-                    if (oldValue != null) {
-                        sharedResults.put(feature, oldValue + 1);
-                    }
-                }
-            }
-
-            System.out.println("✓ Processed: " + url);
+            System.out.println("Processed: " + url);
 
         } catch (InterruptedException e) {
             System.err.println("Thread interrupted: " + url);
-            Thread.currentThread().interrupt(); // Restore interrupt status
         } catch (Exception e) {
-            System.err.println("✗ Error processing " + url + ": " + e.getMessage());
+            System.err.println("Error processing " + url + ": " + e.getMessage());
+        }
+    }
+
+    /// It checks if each feature is in the extracted text and updates the shared
+    /// map.
+    private void saveResults(Document doc) {
+        // Extract text from relevant sections
+        String fullText = extractUsefulTexts(doc).toLowerCase();
+
+        // Check for each feature and update shared map
+        for (String feature : CRIME_FEATURES) {
+            if (containsFeature(fullText, feature)) {
+                // ConcurrentHashMap handles synchronization internally
+                Integer oldValue = sharedResults.putIfAbsent(feature, 1);
+                if (oldValue != null) {
+                    sharedResults.put(feature, oldValue + 1);
+                }
+            }
         }
     }
 
@@ -89,42 +75,23 @@ public class CrimeFeatureExtractor implements Runnable {
         StringBuilder text = new StringBuilder();
 
         // Extract from abstract, article contents, and paragraphs
-        Elements abstracts = doc.select("abstract, .abstract, #abstract");
-        for (Element elem : abstracts) {
-            text.append(elem.text()).append(" ");
-        }
+        Elements allElements = doc.select(
+                "abstract, .abstract, #abstract, article, .article-content, .paper-content, p, section, table, ul, ol");
 
-        Elements articles = doc.select("article, .article-content, .paper-content");
-        for (Element elem : articles) {
+        for (Element elem : allElements)
             text.append(elem.text()).append(" ");
-        }
-
-        Elements paragraphs = doc.select("p, section");
-        for (Element elem : paragraphs) {
-            text.append(elem.text()).append(" ");
-        }
-
-        // Also check tables and lists
-        Elements tables = doc.select("table, ul, ol");
-        for (Element elem : tables) {
-            text.append(elem.text()).append(" ");
-        }
 
         return text.toString();
     }
 
     /// Checks if the provided text contains a specified feature.
     private boolean containsFeature(String text, String feature) {
+        // Checks if the text in a possibly different form is in the text
+        final boolean isPartOfFeatures = text.contains(feature) || text.contains(feature.replace(" ", "-"))
+                || text.contains(feature.replace(" ", "_"));
 
-        if (text.contains(feature)) {
+        if (isPartOfFeatures)
             return true;
-        }
-        if (text.contains(feature.replace(" ", "-"))) {
-            return true;
-        }
-        if (text.contains(feature.replace(" ", "_"))) {
-            return true;
-        }
-        return false;
+        return false; // else return false
     }
 }

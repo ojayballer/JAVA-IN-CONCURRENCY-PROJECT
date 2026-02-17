@@ -27,6 +27,15 @@ dependencies {
     implementation("org.jsoup:jsoup:1.18.1")
 
     implementation("org.knowm.xchart:xchart:3.8.8")
+
+    // // Google API Client
+    // implementation 'com.google.api-client:google-api-client:2.0.0'
+    // // Custom Search Specific Library
+    // implementation 'com.google.apis:google-api-services-customsearch:v1-rev20240821-2.0.0'
+    // // JSON Parsing
+    // implementation 'com.google.http-client:google-http-client-gson:1.43.3'
+
+    // implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

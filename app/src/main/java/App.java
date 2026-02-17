@@ -1,13 +1,17 @@
 import java.util.Scanner;
 
-import question_1.WebScraper;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+
+import question_1.SearchEngineAnalyzer;
+import question_3.Board;
 
 public class App {
     public static void main(String[] args) {
+        // System.out.println("JAVA IN CONCURRENCY ASSIGNMENT");
+        // System.out.println("Select a question to run (1-5):");
         System.out.println("JAVA IN CONCURRENCY ASSIGNMENT");
-        System.out.println("Select a question to run (1-5):");
         requestAndRunQuestion();
-
     }
 
     public static void requestAndRunQuestion() {
@@ -27,8 +31,17 @@ public class App {
 
     /// Assignment 1
     public static void runQuestion1() {
-        WebScraper scraper = new WebScraper();
-        scraper.analyzeCrimeReportingPapers();
-        scraper.analyzeDeepLearningPapers();
+        SearchEngineAnalyzer serAnalyzer = new SearchEngineAnalyzer();
+        serAnalyzer.analyzeCrimeReportingPapers();
+        serAnalyzer.analyzeDeepLearningPapers();
+    }
+}
+
+class Test {
+    public static Document tryFetch() throws Exception {
+        Document doc = Jsoup.connect("https://html.duckduckgo.com/html/")
+                .data("q", "java gradle search")
+                .post();
+        return doc;
     }
 }

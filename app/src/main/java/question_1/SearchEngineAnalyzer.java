@@ -1,36 +1,32 @@
 package question_1;
 
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
+import org.jsoup.nodes.*;
+import org.jsoup.select.Elements;
+import question_1.web_scraper.*;
 
-import question_1.web_scraper.CrimeFeatureExtractor;
-import question_1.web_scraper.ResultVisualizer;
-import question_1.web_scraper.SubheadingExtractor;
-
-public class WebScraper {
+public class SearchEngineAnalyzer {
     private static final int THREAD_POOL_SIZE = 10;
 
     /// This stores the results from the search and extraction tasks in the ratio of
     /// the feature to frequency.
     private ConcurrentHashMap<String, Integer> sharedResults = new ConcurrentHashMap<>();
 
-    /// To ensure only one method can update the sharedResults at a time, we use a
-    /// ReentrantLock to synchronize access to the shared map
+    /// To ensure only one method can update the sharedResults at a time,we use a
+    /// ReentrantLock to synchronize access to the shared map.
     private ReentrantLock lock = new ReentrantLock();
 
-    /// ----------------------------------------------------------------------
     // This function runs the scraping task concurrently for a list of urls. it
     /// determines which type of task to run based on the isCrime flag.
-    /// ----------------------------------------------------------------------
     /// It locks the sharedResults map to ensure thread safety, clears previous
     /// results, and then executes the appropriate extractor tasks in a thread pool.
     /// After all tasks are completed, it sorts the results, displays them in the
     /// terminal, and visualizes them using XChart.
-    public void runScrapingConcurrentlyAndVisualize(List<String> urls,
+    public void runScrapingConcurrentlyAndVisualize(List<String> results,
             boolean isCrime) {
 
         try {
@@ -40,11 +36,15 @@ public class WebScraper {
             // Create a fixed thread pool to run tasks concurrently
             ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
-            for (String url : urls) {
+            for (String result : results) {
                 // If isCrime is true, we run the CrimeFeatureExtractor; otherwise, we run the
                 // SubheadingExtractor
-                Runnable task = isCrime ? new CrimeFeatureExtractor(url, sharedResults)
-                        : new SubheadingExtractor(url, sharedResults);
+                Runnable task;
+                if (isCrime) {
+                    task = new CrimeFeatureExtractor(result, sharedResults);
+                } else {
+                    task = new SubheadingExtractor(result, sharedResults);
+                }
                 executor.execute(task);
             }
 
@@ -77,7 +77,9 @@ public class WebScraper {
     public void analyzeCrimeReportingPapers() {
 
         // Step 1: perform a search from the query and retrieve urls
-        List<String> searchResults = performSearch("crime reporting system features");
+        // List<SearchEngineResult> searchResults = performSearch("crime-reporting
+        // papers");
+        List<String> searchResults = performSearch("crime-reporting papers");
 
         // An executor service to run extraction tasks concurrently
         runScrapingConcurrentlyAndVisualize(searchResults, true);
@@ -87,6 +89,8 @@ public class WebScraper {
     /// relevant URLs.
     public void analyzeDeepLearningPapers() {
         // Step 1: Take user input and retrieve urls
+        // List<SearchEngineResult> searchResults = performSearch("deep learning models
+        // journal");
         List<String> searchResults = performSearch("deep learning models journal");
 
         // An executor service to run extraction tasks concurrently
@@ -102,16 +106,17 @@ public class WebScraper {
         if (query.contains("crime")) {
 
             urls.addAll(Arrays.asList(
+
                     "https://scholar.google.com/scholar?q=crime+reporting+system",
-                    "https://arxiv.org/search/?query=crime+reporting&searchtype=all",
+                    "https://arxiv.org/search/?query=crime+reporting+system&searchtype=all",
                     "https://www.semanticscholar.org/search?q=crime+reporting+system",
-                    "https://www.mdpi.com/search?q=crime+reporting",
+                    "https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=crime+reporting+system",
                     "https://link.springer.com/search?query=crime+reporting+system",
-                    "https://dl.acm.org/search?expanded=crime+reporting+system",
-                    "https://www.researchgate.net/search/publication?q=crime+reporting",
-                    "https://www.sciencedirect.com/search?qs=crime%20reporting%20system",
-                    "https://asistdl.onlinelibrary.wiley.com/action/doSearch?AllField=crime+reporting",
-                    "https://academic.oup.com/search-results?page=1&q=crime+reporting"));
+                    "https://www.base-search.net/Search/Results?lookfor=crime+reporting+system",
+                    "https://core.ac.uk/search?q=crime+reporting+system",
+                    "https://doaj.org/search/articles?source=%7B%22query%22%3A%7B%22query_string%22%3A%7B%22query%22%3A%22crime%20reporting%20system%22%7D%7D%7D",
+                    "https://app.dimensions.ai/discover/publication?search_text=crime%20reporting%20system",
+                    "https://www.lens.org/lens/search/scholar/list?q=crime+reporting+system"));
         } else {
 
             urls.addAll(Arrays.asList(
@@ -130,30 +135,72 @@ public class WebScraper {
         return new ArrayList<>(urls);
     }
 
-    // Sorts the map by value in descending order
+    // /// This method builds a tailored search query by appending specific keywords
+    // to
+    // /// specifically select non-blocking rate limiting websites
+    // private String buildTailoredQuery(String query) {
+    // String academicSites = "(site:scholar.google.com OR " +
+    // "site:arxiv.org OR " +
+    // "site:springer.com OR " +
+    // "site:sciencedirect.com OR " +
+    // "site:semanticscholar.org OR " +
+    // "site:researchgate.net OR " +
+    // "site:dl.acm.org OR " +
+    // "site:mdpi.com OR " +
+    // "site:wiley.com OR " +
+    // "site:oup.com)";
+
+    // return query + " research paper journal " + academicSites;
+    // }
+
+    // // This method performs a search using DuckDuckGo and extracts the title,
+    // // URL,and description for each result.
+    // private List<SearchEngineResult> performSearch(String query) {
+    // List<SearchEngineResult> results = new ArrayList<>();
+
+    // try {
+    // String formattedQuery = URLEncoder.encode(buildTailoredQuery(query),
+    // "UTF-8");
+
+    // String url = "https://html.duckduckgo.com/html/?q=" + formattedQuery;
+    // Document doc = SearchEngineAnalyzer.extractDocument(url);
+
+    // Elements searchResults = doc.select(".result");
+    // for (Element res : searchResults) {
+    // String title = res.select(".result__title").text();
+    // String link = res.select(".result__url").attr("href");
+    // String snippet = res.select(".result__snippet").text();
+
+    // if (!title.isEmpty() && !link.isEmpty()) {
+    // results.add(new SearchEngineResult(title, link, snippet));
+    // }
+    // }
+
+    // } catch (Exception e) {
+    // System.err.println("Search error: " + e.getMessage());
+    // }
+
+    // return results;
+    // }
+
+    // Sorts the map by value in descending order and returns a new LinkedHashMap to
+    // maintain the sorted order.
     private Map<String, Integer> sortByValue(ConcurrentHashMap<String, Integer> map) {
         // Convert to list for easy sorting
         List<Map.Entry<String, Integer>> list = new ArrayList<>(map.entrySet());
 
         // Sort in descending order by value
-        Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
-            @Override
-            public int compare(Map.Entry<String, Integer> e1, Map.Entry<String, Integer> e2) {
-                return e2.getValue().compareTo(e1.getValue());
-            }
-        });
+        Collections.sort(list, (e1, e2) -> e2.getValue().compareTo(e1.getValue()));
 
         // Improve access time while still maintaining order
         Map<String, Integer> sortedMap = new LinkedHashMap<>();
-        for (Map.Entry<String, Integer> entry : list) {
+        for (Map.Entry<String, Integer> entry : list)
             sortedMap.put(entry.getKey(), entry.getValue());
-        }
 
         return sortedMap;
     }
 
-    /// Formats the results in a readable way and prints to terminal. Only shows top
-    /// 20 results
+    /// Formats the results in a readable way and prints to terminal. Shows top 20.
     private void displayResults(Map<String, Integer> results, String title) {
         System.out.println("\n--- " + title + " (Sorted by Frequency) ---");
         int count = 0;
@@ -165,19 +212,11 @@ public class WebScraper {
         }
     }
 
-    public static Document customDoc(String url) throws Exception {
+    /// Extracts the HTML document from the given URL using Jsoup
+    public static Document extractDocument(String url) throws Exception {
         return Jsoup.connect(url)
                 .userAgent(
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                .header("Accept-Language", "en-US,en;q=0.5")
-                .header("Accept-Encoding", "gzip, deflate")
-                .header("Connection", "keep-alive")
-                .header("Upgrade-Insecure-Requests", "1")
-                .timeout(15000) // Increased timeout
-                .maxBodySize(0) // Handle large pages
-                .followRedirects(true)
-                .ignoreHttpErrors(true) // DON'T FAIL ON 403/404
                 .get();
     }
 }

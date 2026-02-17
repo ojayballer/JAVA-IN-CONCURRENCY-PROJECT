@@ -1,6 +1,7 @@
 package question_1.web_scraper;
 
-class SearchEngineResult {
+// A simple class to hold search results with title, URL, and description.
+public class SearchEngineResult {
     private String title;
     private String url;
     private String description;
