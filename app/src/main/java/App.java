@@ -9,7 +9,7 @@ import question_3.Board;
 public class App {
     public static void main(String[] args) {
         // System.out.println("JAVA IN CONCURRENCY ASSIGNMENT");
-        // System.out.println("Select a question to run (1-5):");
+        System.out.println("Select a question to run (1-5):");
         System.out.println("JAVA IN CONCURRENCY ASSIGNMENT");
         requestAndRunQuestion();
     }
