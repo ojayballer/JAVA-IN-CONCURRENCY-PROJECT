@@ -1,12 +1,25 @@
 package question_1;
 
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 import org.jsoup.select.Elements;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import question_1.web_scraper.*;
 
 public class SearchEngineAnalyzer {
@@ -97,89 +110,44 @@ public class SearchEngineAnalyzer {
         runScrapingConcurrentlyAndVisualize(searchResults, false);
     }
 
-    /// This method performs a search based on the query and returns a list of URLs
-    /// to scrape. Using a custom hardcoded list of URLs temporarily until we
-    /// implement actual web search functionality.
-    // private List<String> performSearch(String query) {
-    // List<String> urls = new ArrayList<>();
-
-    // if (query.contains("crime")) {
-
-    // urls.addAll(Arrays.asList(
-
-    // "https://scholar.google.com/scholar?q=crime+reporting+system",
-    // "https://arxiv.org/search/?query=crime+reporting+system&searchtype=all",
-    // "https://www.semanticscholar.org/search?q=crime+reporting+system",
-    // "https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=crime+reporting+system",
-    // "https://link.springer.com/search?query=crime+reporting+system",
-    // "https://www.base-search.net/Search/Results?lookfor=crime+reporting+system",
-    // "https://core.ac.uk/search?q=crime+reporting+system",
-    // "https://doaj.org/search/articles?source=%7B%22query%22%3A%7B%22query_string%22%3A%7B%22query%22%3A%22crime%20reporting%20system%22%7D%7D%7D",
-    // "https://app.dimensions.ai/discover/publication?search_text=crime%20reporting%20system",
-    // "https://www.lens.org/lens/search/scholar/list?q=crime+reporting+system"));
-    // } else {
-
-    // urls.addAll(Arrays.asList(
-    // "https://scholar.google.com/scholar?q=deep+learning+models+journal",
-    // "https://arxiv.org/search/?query=deep+learning+models&searchtype=all",
-    // "https://www.semanticscholar.org/search?q=deep+learning+models",
-    // "https://www.mdpi.com/search?q=deep+learning+models",
-    // "https://link.springer.com/search?query=deep+learning+models",
-    // "https://dl.acm.org/search?expanded=deep+learning+models",
-    // "https://www.researchgate.net/search/publication?q=deep+learning+models",
-    // "https://www.sciencedirect.com/search?qs=deep%20learning%20models",
-    // "https://asistdl.onlinelibrary.wiley.com/action/doSearch?AllField=deep+learning+models",
-    // "https://academic.oup.com/search-results?page=1&q=deep+learning+models"));
-    // }
-
-    // return new ArrayList<>(urls);
-    // }
-
-    /// This method builds a tailored search query by appending specific keywords
-    /// to
-    /// specifically select non-blocking rate limiting websites
-    private String buildTailoredQuery(String query) {
-        String academicSites = "(site:scholar.google.com OR " +
-                "site:arxiv.org OR " +
-                "site:springer.com OR " +
-                "site:sciencedirect.com OR " +
-                "site:semanticscholar.org OR " +
-                "site:researchgate.net OR " +
-                "site:dl.acm.org OR " +
-                "site:mdpi.com OR " +
-                "site:wiley.com OR " +
-                "site:oup.com)";
-
-        return query + " research paper journal " + academicSites;
-    }
-
-    // This method performs a search using DuckDuckGo and extracts the title,
-    // URL,and description for each result.
     private List<SearchEngineResult> performSearch(String query) {
         List<SearchEngineResult> results = new ArrayList<>();
 
+        String url = "https://google.serper.dev/search";
+
         try {
-            String formattedQuery = URLEncoder.encode(buildTailoredQuery(query),
-                    "UTF-8");
 
-            String url = "https://html.duckduckgo.com/html/?q=" + formattedQuery;
-            Document doc = SearchEngineAnalyzer.extractDocument(url);
+            // Execute POST request via Jsoup
+            String response = Jsoup.connect(url)
+                    .header("X-API-KEY", "754fd1e768094fd51e443d72a2ebe729eb65a4d4")
+                    .header("Content-Type", "application/json")
+                    .requestBody("{\"q\": \"" + query + "\"}")
+                    .ignoreContentType(true)
+                    .method(org.jsoup.Connection.Method.POST)
+                    .execute()
+                    .body();
 
-            Elements searchResults = doc.select(".result");
-            for (Element res : searchResults) {
-                String title = res.select(".result__title").text();
-                String link = res.select(".result__url").attr("href");
-                String snippet = res.select(".result__snippet").text();
+            // Parse JSON response
+            JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
 
-                if (!title.isEmpty() && !link.isEmpty()) {
-                    results.add(new SearchEngineResult(title, link, snippet));
+            if (jsonObject.has("organic")) {
+                JsonArray organicResults = jsonObject.getAsJsonArray("organic");
+
+                for (int i = 0; i < organicResults.size(); i++) {
+                    JsonObject result = organicResults.get(i).getAsJsonObject();
+
+                    String title = result.has("title") ? result.get("title").getAsString() : "";
+                    String link = result.has("link") ? result.get("link").getAsString() : "";
+                    String snippet = result.has("snippet") ? result.get("snippet").getAsString() : "";
+
+                    if (!title.isEmpty()) {
+                        results.add(new SearchEngineResult(title, link, snippet));
+                    }
                 }
             }
-
         } catch (Exception e) {
-            System.err.println("Search error: " + e.getMessage());
+            e.printStackTrace();
         }
-
         return results;
     }
 

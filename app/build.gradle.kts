@@ -28,6 +28,9 @@ dependencies {
 
     implementation("org.knowm.xchart:xchart:3.8.8")
 
+    implementation("org.json:json:20240303")
+    implementation("com.google.code.gson:gson:2.10.1")
+
     // // Google API Client
     // implementation 'com.google.api-client:google-api-client:2.0.0'
     // // Custom Search Specific Library
